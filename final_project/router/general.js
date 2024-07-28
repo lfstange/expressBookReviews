@@ -1,5 +1,6 @@
 const express = require('express');
 let books = require("./booksdb.js");
+const axios = require('axios')
 let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
 const public_users = express.Router();
@@ -26,7 +27,7 @@ public_users.post("/register", (req,res) => {
 // Get the book list available in the shop
 public_users.get('/', function (req, res) {
    
-  let books = new Promise((resolve, reject) => {
+  let booksList = new Promise((resolve, reject) => {
     if (Object.keys(books).length > 0) {
       resolve(books);
     } else {
@@ -34,7 +35,7 @@ public_users.get('/', function (req, res) {
     }
   })
 
-  books.then((books) => {
+  booksList.then((booksList) => {
     return res.status(300).json(books);
   }).catch(() => {
     return res.status(300).json({message: "No books available"});
@@ -43,7 +44,7 @@ public_users.get('/', function (req, res) {
 });
 
 // Get book details based on ISBN
-public_users.get('/isbn/:isbn',function (req, res) {
+public_users.get('/isbn/:isbn', function (req, res) {
 
     //Get th book based on ISBN
     let isbn = req.params.isbn;
@@ -104,34 +105,14 @@ public_users.get('/author/:author',function (req, res) {
 
 
 // Get all books based on title
-public_users.get('/title/:title',function (req, res) {
-  let title = req.params.title;
-  // If books are available,
-  if (Object.keys(books).length > 0) {
-    // Create a Promise to filter the books based on the title
-    new Promise((resolve, reject) => {
-
-      let booksMatch = [];
-      for (let i in books) {
-        let titleDB = books[i].title;
-        if (titleDB === title) {
-          booksMatch.push(books[i]);
-        }
-      }
-      if (booksMatch.length > 0) {
-        resolve(booksMatch);
-      } else {
-        reject(null);
-      }
-    } ).then((booksMatch) => {
-        return res.status(300).json(booksMatch);
-    } ).catch(() => {
-        return res.status(300).json({message: "No books available"});
-    });
-  } else {
-    return res.status(300).json({message: "No books available"});
+public_users.get('/title/:title', async function (req, res) {
+  const title = req.params.title;
+  try {
+      const response = Object.values(books).find(x => x.title === title)
+      res.status(200).json(response);
+  } catch (error) {
+      res.status(500).json({ message: "Error fetching books by title", error: error.message });
   }
-  
 });
 
 //  Get book review
